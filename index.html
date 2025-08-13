@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>La Comète de Lunark - Ark Shop</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; background:#111; color:white; }
+  header { background:#222; padding:15px; text-align:center; cursor:pointer; }
+  nav { display:flex; flex-wrap:wrap; justify-content:center; background:#333; }
+  nav button { background:#555; color:white; border:none; margin:3px; padding:10px 15px; border-radius:8px 8px 0 0; cursor:pointer; }
+  nav button:hover { background:#777; }
+  nav button.active { background:#ff9800; color:#000; }
+  section { display:none; padding:20px; min-height:300px; border-radius:10px; margin:10px; background-size:cover; background-position:center; }
+  .item { padding:10px; margin:5px 0; background:rgba(0,0,0,0.7); border-radius:5px; display:flex; align-items:center; justify-content:space-between; transition:0.2s; }
+  .item img { width:80px; height:80px; object-fit:cover; border-radius:5px; margin-right:15px; }
+  .item:hover { transform:scale(1.05); box-shadow:0 0 15px #ff9800; }
+  #modPanel { display:none; background:#222; padding:15px; margin:10px; border-radius:10px; }
+  #modPanel input, #modPanel select { margin:5px; padding:5px; }
+  #modPanel button { margin:5px; padding:5px 10px; cursor:pointer; }
+  .item-buttons button { margin-left:5px; padding:3px 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>La Comète de Lunark</h1>
+  <small>(Double-cliquez ici pour accéder au mode modérateur)</small>
+</header>
+
+<nav id="navTabs">
+  <!-- Les onglets seront générés automatiquement -->
+</nav>
+
+<!-- Sections -->
+<div id="sectionsContainer">
+  <!-- Les sections seront générées automatiquement -->
+</div>
+
+<!-- Panneau modérateur -->
+<div id="modPanel">
+  <h3>Mode Modérateur</h3>
+
+  <label>Onglet :</label>
+  <select id="modTab"></select><br>
+
+  <label>Nouveau nom onglet :</label>
+  <input type="text" id="modTabName" placeholder="Renommer l'onglet">
+  <button onclick="renameTab()">💾 Renommer</button><br>
+
+  <hr>
+  <label>Image URL :</label><input type="text" id="modImg" placeholder="URL image">
+  <label>Nom :</label><input type="text" id="modName" placeholder="Nom du dino/item">
+  <label>Prix :</label><input type="text" id="modPrice" placeholder="Prix">
+  <button onclick="addItem()">Ajouter Item</button>
+</div>
+
+<script>
+const password = "admin123";
+
+// Onglets initiaux
+let tabs = [
+  {id:"p1500", name:"1500"},
+  {id:"p3500", name:"3500"},
+  {id:"p5000", name:"5000"},
+  {id:"p7500", name:"7500"},
+  {id:"p10000", name:"10000"},
+  {id:"p15000", name:"15000"},
+  {id:"p20000", name:"20000"},
+  {id:"fut1", name:"Futur 1"},
+  {id:"fut2", name:"Futur 2"},
+  {id:"fut3", name:"Futur 3"},
+  {id:"fut4", name:"Futur 4"},
+  {id:"fut5", name:"Futur 5"},
+  {id:"fut6", name:"Futur 6"},
+  {id:"fut7", name:"Futur 7"}
+];
+
+// Créer onglets et sections
+function createTabs() {
+  const nav = document.getElementById('navTabs');
+  const container = document.getElementById('sectionsContainer');
+  nav.innerHTML = "";
+  container.innerHTML = "";
+  tabs.forEach((tab,i) => {
+    // Onglet
+    const btn = document.createElement('button');
+    btn.textContent = tab.name;
+    btn.className = i===0 ? 'tabButton active' : 'tabButton';
+    btn.onclick = () => showTab(tab.id);
+    nav.appendChild(btn);
+    // Section
+    const sec = document.createElement('section');
+    sec.id = tab.id;
+    sec.style.display = i===0 ? 'block' : 'none';
+    container.appendChild(sec);
+  });
+  updateModSelect();
+}
+
+// Mettre à jour le select du panneau modérateur
+function updateModSelect() {
+  const sel = document.getElementById('modTab');
+  sel.innerHTML = "";
+  tabs.forEach(tab => {
+    const opt = document.createElement('option');
+    opt.value = tab.id;
+    opt.textContent = tab.name;
+    sel.appendChild(opt);
+  });
+}
+
+// Afficher un onglet
+function showTab(tabId) {
+  document.querySelectorAll('section').forEach(sec => sec.style.display='none');
+  document.getElementById(tabId).style.display='block';
+  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`button[onclick="showTab('${tabId}')"]`).classList.add('active');
+}
+
+// Mot de passe pour modérateur
+function checkPassword() {
+  const userPass = prompt("Mot de passe modérateur:");
+  if(userPass === password){
+    document.getElementById('modPanel').style.display = 'block';
+    alert("Accès modérateur activé !");
+  } else {
+    alert("Mot de passe incorrect !");
+  }
+}
+
+// Ajouter item
+function addItem() {
+  const tab = document.getElementById('modTab').value;
+  const img = document.getElementById('modImg').value;
+  const name = document.getElementById('modName').value;
+  const price = document.getElementById('modPrice').value;
+  if(tab && img && name && price){
+    let savedItems = JSON.parse(localStorage.getItem(tab)) || [];
+    savedItems.push({img,name,price});
+    localStorage.setItem(tab, JSON.stringify(savedItems));
+    renderItems(tab);
+    document.getElementById('modImg').value = '';
+    document.getElementById('modName').value = '';
+    document.getElementById('modPrice').value = '';
+  } else alert("Remplissez tous les champs !");
+}
+
+// Supprimer item
+function deleteItem(tab,index){
+  let savedItems = JSON.parse(localStorage.getItem(tab)) || [];
+  savedItems.splice(index,1);
+  localStorage.setItem(tab, JSON.stringify(savedItems));
+  renderItems(tab);
+}
+
+// Modifier item
+function editItem(tab,index){
+  const section = document.getElementById(tab);
+  const savedItems = JSON.parse(localStorage.getItem(tab)) || [];
+  section.children[index].innerHTML = `
+    <input type="text" value="${savedItems[index].name}" class="editName">
+    <input type="text" value="${savedItems[index].img}" class="editImg">
+    <input type="text" value="${savedItems[index].price}" class="editPrice">
+    <button onclick="saveEdit('${tab}',${index})">💾</button>
+    <button onclick="deleteItem('${tab}',${index})">🗑️</button>
+  `;
+}
+
+// Sauvegarder item modifié
+function saveEdit(tab,index){
+  const section = document.getElementById(tab);
+  const inputs = section.children[index].querySelectorAll('input');
+  const newName = inputs[0].value;
+  const newImg = inputs[1].value;
+  const newPrice = inputs[2].value;
+  if(newName && newImg && newPrice){
+    let savedItems = JSON.parse(localStorage.getItem(tab)) || [];
+    savedItems[index] = {name:newName,img:newImg,price:newPrice};
+    localStorage.setItem(tab, JSON.stringify(savedItems));
+    renderItems(tab);
+  } else alert("Remplissez tous les champs !");
+}
+
+// Afficher items d’un onglet
+function renderItems(tab){
+  const section = document.getElementById(tab);
+  section.innerHTML = "";
+  const savedItems = JSON.parse(localStorage.getItem(tab)) || [];
+  savedItems.forEach((item,idx) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<div><img src="${item.img}" alt="${item.name}"> ${item.name} - ${item.price}</div>
+                     <div class="item-buttons">
+                       <button onclick="editItem('${tab}',${idx})">✏️</button>
+                       <button onclick="deleteItem('${tab}',${idx})">🗑️</button>
+                     </div>`;
+    section.appendChild(div);
+  });
+}
+
+// Renommer un onglet
+function renameTab(){
+  const tabId = document.getElementById('modTab').value;
+  const newName = document.getElementById('modTabName').value;
+  if(newName){
+    const tab = tabs.find(t => t.id === tabId);
+    tab.name = newName;
+    createTabs();
+    document.getElementById('modTabName').value = '';
+  } else alert("Entrez un nouveau nom !");
+}
+
+// Charger items sauvegardés au départ
+function loadSavedItems(){
+  tabs.forEach(t => {
+    if(!localStorage.getItem(t.id)) localStorage.setItem(t.id, JSON.stringify([]));
+    renderItems(t.id);
+  });
+}
+
+// Double-clique header pour modérateur
+document.querySelector('header').ondblclick = checkPassword;
+
+// Initialisation
+createTabs();
+loadSavedItems();
+</script>
+
+</body>
+</html>
